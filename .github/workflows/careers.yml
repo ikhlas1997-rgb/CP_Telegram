@@ -1,0 +1,30 @@
+name: Daily Atlas careers check
+
+on:
+  schedule:
+    - cron: '5 8 * * *'   # 08:05 UTC = 12:05 Gulf time (GST is UTC+4)
+  workflow_dispatch:        # adds a manual "Run workflow" button for testing
+
+permissions:
+  contents: write           # lets the job commit seen-jobs.json back
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node gh-daily.js
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AGENCY_ALIAS: Cordell-Partners
+      - name: Remember handled roles
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add seen-jobs.json
+          git commit -m "Update seen roles" || echo "no changes"
+          git push || echo "nothing to push"
